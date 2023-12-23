@@ -10,12 +10,19 @@ import authenticate from './middlewares/authenticate';
 import cookieParser from 'cookie-parser';
 import cors from "cors"
 
+
 dotenv.config();
 
 const app = express();
+app.use(cors())
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+
 app.use(cookieParser());
 app.use(express.json());
-app.use(cors())
 // Basic route for testing
 app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to Tech-fix API!');

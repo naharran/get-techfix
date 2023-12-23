@@ -64,7 +64,7 @@ router.post('/signup', async (req: Request, res: Response) => {
     const tokens = await handleAuthentication(email, password, res)
     res.status(201).json({ message: 'User registered successfully', tokens })
   } catch (error) {
-    res.status(500).json({ error: ErrorCodes[error.data.code] })
+    res.status(500).json({ error})
   }
 })
 

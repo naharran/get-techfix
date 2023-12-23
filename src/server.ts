@@ -8,15 +8,14 @@ import swaggerUi from 'swagger-ui-express';
 import apartmentRoutes from './routes/apartmentRoutes';
 import authenticate from './middlewares/authenticate';
 import cookieParser from 'cookie-parser';
-
+import cors from "cors"
 
 dotenv.config();
 
 const app = express();
 app.use(cookieParser());
 app.use(express.json());
-
-
+app.use(cors())
 // Basic route for testing
 app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to Tech-fix API!');

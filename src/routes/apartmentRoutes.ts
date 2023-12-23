@@ -11,7 +11,7 @@ const router = express.Router();
 router.post('/create', authenticate, async (req: Request, res: Response) => {
     try {
         const { name, address } = req.body;
-
+        const userId = req.user._id
         // Use geolocation utility to convert address to coordinates
         const coordinates = await geocodeAddress(address);
 
@@ -19,10 +19,13 @@ router.post('/create', authenticate, async (req: Request, res: Response) => {
         const newApartment = new Apartment({
             name,
             address,
+            residents: [userId],
             coordinates
         });
 
         await newApartment.save();
+        await User.findByIdAndUpdate(userId, { apartmentId: newApartment._id });
+
         res.status(201).json({ message: 'Apartment created successfully', newApartment });
     } catch (error) {
         console.error('Error creating apartment:', error);
@@ -61,7 +64,55 @@ router.get('/resident/:residentId', authenticate, async (req: Request, res: Resp
         const apartments = await Apartment.find({ residents: residentId }).populate('residents');
         res.status(200).json(apartments);
     } catch (error) {
-        console.error('Error finding apartments by resident ID:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+router.get('/apartments-summary', authenticate, async (req: Request, res: Response) => {
+    try {
+        const apartmentsSummary = await Apartment.aggregate([
+            {
+                $lookup: {
+                    from: 'issues',
+                    localField: '_id',
+                    foreignField: 'apartment',
+                    as: 'issues'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$issues',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    name: { $first: '$name' },
+                    address: { $first: '$address' },
+                    issuesCount: { $sum: { $cond: [{ $eq: ['$issues.status', 'open'] }, 1, 0] } },
+                    residents: { $first: '$residents' }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'residents',
+                    foreignField: '_id',
+                    as: 'residentDetails'
+                }
+            },
+            {
+                $project: {
+                    name: 1,
+                    address: 1,
+                    issuesCount: 1,
+                    residents: '$residentDetails.name'
+                }
+            }
+        ]);
+
+        res.status(200).json(apartmentsSummary);
+    } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });

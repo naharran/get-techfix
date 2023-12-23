@@ -195,7 +195,131 @@
                     }
                 ]
             }
-        }
+        },
+        "/api/apartments/": {
+            "get": {
+              "tags": ["Apartment"],
+              "summary": "Get a list of apartments with optional search parameters",
+              "description": "Retrieve apartments, optionally filtered by resident name, email, address, or apartment name.",
+              "parameters": [
+                {
+                  "in": "query",
+                  "name": "residentName",
+                  "schema": { "type": "string" },
+                  "description": "Optional resident name to filter apartments."
+                },
+                {
+                  "in": "query",
+                  "name": "residentEmail",
+                  "schema": { "type": "string" },
+                  "description": "Optional resident email to filter apartments."
+                },
+                {
+                  "in": "query",
+                  "name": "address",
+                  "schema": { "type": "string" },
+                  "description": "Optional address to filter apartments."
+                },
+                {
+                  "in": "query",
+                  "name": "apartmentName",
+                  "schema": { "type": "string" },
+                  "description": "Optional apartment name to filter apartments."
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "A list of apartments",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/Apartment" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/apartment/resident/{residentId}": {
+            "get": {
+              "tags": ["Apartment"],
+              "summary": "Get apartments by resident ID",
+              "description": "Retrieve apartments based on a specific resident's ID.",
+              "parameters": [
+                {
+                  "in": "path",
+                  "name": "residentId",
+                  "required": true,
+                  "schema": { "type": "string" },
+                  "description": "The ID of the resident."
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Apartments for the specified resident",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/Apartment" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/apartments/apartments-summary": {
+            "get": {
+              "tags": ["Apartment"],
+              "summary": "Get summary of apartments",
+              "description": "Retrieve a summary of each apartment including details of residents and count of open issues.",
+              "responses": {
+                "200": {
+                  "description": "Summary of apartments",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/ApartmentSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "components": {
+          "schemas": {
+            "Apartment": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "address": { "type": "string" },
+                "coordinates": {
+                  "type": "object",
+                  "properties": {
+                    "lat": { "type": "number" },
+                    "lon": { "type": "number" }
+                  }
+                },
+                "residents": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "issues": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "ApartmentSummary": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "address": { "type": "string" },
+                "issuesCount": { "type": "number" },
+                "residents": {
+                  "type": "array",
+                  "items": { "type": "object" }
+                }
+              }
+            }
+          }
         
     
     }

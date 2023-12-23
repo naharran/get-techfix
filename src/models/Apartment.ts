@@ -1,8 +1,8 @@
 // src/models/Apartment.ts
 
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
-interface IApartment extends Document {
+interface IApartment extends Document<Types.ObjectId>  {
     name: string;
     address: string;
     coordinates: {

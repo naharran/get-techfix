@@ -125,6 +125,14 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 })
 
+router.get('/logout', (req: Request, res: Response) => {
+    // Clear the authentication token (or cookie)
+    res.clearCookie('authToken'); // Assuming 'authToken' is the name of your cookie
+    
+    res.status(200).json({ message: 'Successfully logged out' });
+});
+
+
 // Additional routes can be added here
 
 export default router

@@ -18,6 +18,31 @@
         }
     ],
     "paths": {
+        "/api/logout": {
+            "get": {
+              "tags": ["User"],
+              "summary": "Log out the current user",
+              "description": "Clears the user's session and logs them out.",
+              "responses": {
+                "200": {
+                  "description": "Successfully logged out",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "message": {
+                            "type": "string",
+                            "example": "Successfully logged out"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
         "/api/users/signup": {
             "post": {
                 "tags": ["User"],

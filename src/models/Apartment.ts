@@ -1,17 +1,27 @@
-import mongoose, { Schema, Document } from 'mongoose';
+// src/models/Apartment.ts
+
+import mongoose, { Document, Schema } from 'mongoose';
 
 interface IApartment extends Document {
-  name: string;
-  address: string;
-  residentIds: mongoose.Types.ObjectId[];
-  issueIds: mongoose.Types.ObjectId[];
+    name: string;
+    address: string;
+    coordinates: {
+        lat: number;
+        lon: number;
+    };
+    residents: mongoose.Types.ObjectId[];
+    issues: mongoose.Types.ObjectId[];
 }
 
 const ApartmentSchema: Schema = new Schema({
-  name: { type: String, required: true },
-  address: { type: String, required: true },
-  residentIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  issueIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Issue' }]
+    name: { type: String, required: true },
+    address: { type: String, required: true },
+    coordinates: {
+        lat: { type: Number, required: true },
+        lon: { type: Number, required: true }
+    },
+    residents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    issues: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Issue' }]
 });
 
 export default mongoose.model<IApartment>('Apartment', ApartmentSchema);

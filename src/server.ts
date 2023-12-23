@@ -19,7 +19,7 @@ app.use(express.json());
 
 // Basic route for testing
 app.get('/', (req: Request, res: Response) => {
-  res.send('Hello World with TypeScript!');
+  res.send('Welcome to Tech-fix API!');
 });
 
 // MongoDB Connection Options

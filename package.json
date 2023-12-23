@@ -4,9 +4,9 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "ts-node src/server.ts",
+    "serve": "ts-node src/server.ts",
     "build": "tsc",
-    "serve": "node dist/server.js"
+    "start": "node dist/server.js"
   },
   "author": "",
   "license": "ISC",

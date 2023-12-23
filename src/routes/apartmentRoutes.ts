@@ -4,6 +4,7 @@ import express, { Request, Response } from 'express';
 import authenticate from '../middlewares/authenticate';
 import Apartment from '../models/Apartment';
 import { geocodeAddress } from '../utils/geocoding'; // Assuming this is your geolocation utility
+import User from '../models/User';
 
 const router = express.Router();
 
@@ -35,16 +36,16 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 
         if (residentName || residentEmail) {
             let userMatch = {};
-            if (residentName) userMatch['name'] = new RegExp(residentName, 'i');
-            if (residentEmail) userMatch['email'] = new RegExp(residentEmail, 'i');
+            if (residentName) userMatch['name'] = new RegExp(residentName as string, 'i');
+            if (residentEmail) userMatch['email'] = new RegExp(residentEmail as string, 'i');
 
             const users = await User.find(userMatch);
             const userIds = users.map(user => user._id);
             query['residents'] = { $in: userIds };
         }
 
-        if (address) query['address'] = new RegExp(address, 'i');
-        if (apartmentName) query['name'] = new RegExp(apartmentName, 'i');
+        if (address) query['address'] = new RegExp(address as string, 'i');
+        if (apartmentName) query['name'] = new RegExp(apartmentName as string, 'i');
 
         const apartments = await Apartment.find(query).populate('residents');
         res.status(200).json(apartments);

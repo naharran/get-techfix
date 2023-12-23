@@ -8,7 +8,6 @@ import Profile from '../models/Profile'
 import authenticate from '../middlewares/authenticate'
 import Apartment from '../models/Apartment'
 import { Types } from 'mongoose'
-import { ErrorCodes } from '../consts'
 
 const router = express.Router()
 

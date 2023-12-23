@@ -1,16 +1,21 @@
 
 import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import userRoutes from './routes/userRoutes';
 import dotenv from 'dotenv';
-import fs from 'fs'; 
+import * as swaggerDocument from '../swagger.json';
+import swaggerUi from 'swagger-ui-express';
+import apartmentRoutes from './routes/apartmentRoutes';
+import authenticate from './middlewares/authenticate';
+import cookieParser from 'cookie-parser';
+
 
 dotenv.config();
 
-fs.readFile("./X509-cert-5441899587717669141.pem",(err,data) =>{
-  console.log({fileData:data})
-})
 const app = express();
+app.use(cookieParser());
 app.use(express.json());
+
 
 // Basic route for testing
 app.get('/', (req: Request, res: Response) => {
@@ -22,15 +27,12 @@ const mongoUri = process.env.MONGODB_URI as string;
 const mongoOptions: mongoose.ConnectOptions = {
 };
 
-// Environment-specific certificate handling
-if (process.env.NODE_ENV === 'production') {
-  // In production, use certificate from Base64-encoded environment variable
-  const cert = Buffer.from(process.env.MONGO_CERT_BASE64 as string, 'base64').toString('utf-8');
-  mongoOptions.tlsCertificateKeyFile = cert;
-} else {
-  // In development, use certificate file directly
-  console.log("else block",process.env.MONGODB_URI)
-}
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.use('/api/users', userRoutes);
+app.use('/api/apartments',authenticate, apartmentRoutes);
+
+
 mongoose.connect(mongoUri, mongoOptions)
   .then(() => console.log('Connected to MongoDB Atlas'))
   .catch(err => console.error('Error connecting to MongoDB', err));

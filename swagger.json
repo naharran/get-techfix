@@ -6,9 +6,10 @@
         "description": "API for user management including signup, profile completion, and login"
     },
     "servers": [
+
         {
-            "url": "https://get-techfix-f8f31f9ffc07.herokuapp.com/",
-            "description": "Local Development Server"
+          "url": "https://get-techfix-f8f31f9ffc07.herokuapp.com/",
+          "description": "Local Development Server"
         }
     ],
     "tags": [
@@ -18,7 +19,7 @@
         }
     ],
     "paths": {
-        "/api/logout": {
+        "/api/users/logout": {
             "get": {
               "tags": ["User"],
               "summary": "Log out the current user",
@@ -140,6 +141,43 @@
                 }
             }
         },
+        "/api/users/users-by-type": {
+          "get": {
+            "tags": ["User"],
+            "summary": "List users by type",
+            "description": "Retrieve a list of users filtered by user type (either 'Resident' or 'Fixer').",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "userType",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "The type of users to retrieve ('Resident' or 'Fixer')."
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "A list of users filtered by the specified type",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Bad Request - Invalid or missing userType query parameter"
+              },
+              "401": {
+                "description": "Unauthorized, if authentication is required"
+              }
+            }
+          }
+        },
+        
+        
         "/api/users/login": {
             "post": {
                 "tags": ["User"],
@@ -264,18 +302,18 @@
               }
             }
           },
-          "/api/apartment/resident/{residentId}": {
+          "/api/apartments/{apartmentId}": {
             "get": {
               "tags": ["Apartment"],
-              "summary": "Get apartments by resident ID",
-              "description": "Retrieve apartments based on a specific resident's ID.",
+              "summary": "Get an apartment by apartment ID",
+              "description": "Retrieve an apartment based on a specific aparment's ID.",
               "parameters": [
                 {
                   "in": "path",
-                  "name": "residentId",
+                  "name": "apartmentId",
                   "required": true,
                   "schema": { "type": "string" },
-                  "description": "The ID of the resident."
+                  "description": "The ID of the apartment."
                 }
               ],
               "responses": {
@@ -290,23 +328,75 @@
               }
             }
           },
-          "/api/apartments/apartments-summary": {
+          "/api/apartments/{apartmentId}/potential-fixers": {
             "get": {
               "tags": ["Apartment"],
-              "summary": "Get summary of apartments",
-              "description": "Retrieve a summary of each apartment including details of residents and count of open issues.",
+              "summary": "Get potential fixers for an apartment",
+              "description": "Retrieve potential fixers for an apartment, optionally filtered by issue type.",
+              "parameters": [
+                {
+                  "in": "path",
+                  "name": "apartmentId",
+                  "required": true,
+                  "schema": { "type": "string" },
+                  "description": "The ID of the apartment."
+                },
+                {
+                  "in": "query",
+                  "name": "issueType",
+                  "schema": { "type": "string" },
+                  "description": "Optional issue type to filter fixers."
+                }
+              ],
               "responses": {
                 "200": {
-                  "description": "Summary of apartments",
+                  "description": "List of potential fixers",
                   "content": {
                     "application/json": {
-                      "schema": { "$ref": "#/components/schemas/ApartmentSummary" }
+                      "schema": { "$ref": "#/components/schemas/User" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          
+          "/api/locations/": {
+            "get": {
+              "tags": ["Location"],
+              "summary": "Get a list of all locations",
+              "description": "Retrieve all locations available in the system.",
+              "responses": {
+                "200": {
+                  "description": "A list of locations",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/Location" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/services/": {
+            "get": {
+              "tags": ["Service"],
+              "summary": "Get a list of all services",
+              "description": "Retrieve all services available in the system.",
+              "responses": {
+                "200": {
+                  "description": "A list of services",
+                  "content": {
+                    "application/json": {
+                      "schema": { "$ref": "#/components/schemas/Service" }
                     }
                   }
                 }
               }
             }
           }
+          
+          
         },
         "components": {
           "schemas": {

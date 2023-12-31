@@ -1,6 +1,7 @@
 // src/validators/userValidator.js
 import { body, validationResult } from 'express-validator'
 import User from '../models/User' // Import your User model
+import { UserType } from '../types'
 
 const checkUserTypeAssigned = async (value, { req }) => {
   const user = await User.findById(req.user._id) // Assuming req.user._id holds the user's ID
@@ -14,6 +15,13 @@ const checkUserTypeAssigned = async (value, { req }) => {
 
   return true
 }
+const validateObjectId = (value: string, { req, location, path }) => {
+  if (!value.match(/^[0-9a-fA-F]{24}$/)) {
+    throw new Error(`${path} contains an invalid ID format`);
+  }
+  return true;
+};
+
 export const validateProfileUpdate = [
   body('userType')
     .isIn(['Resident', 'Fixer'])
@@ -25,14 +33,22 @@ export const validateProfileUpdate = [
     .withMessage('Apartment ID is required for Residents')
     .isMongoId()
     .withMessage('Invalid Apartment ID format'),
+    body('services.*')
+    .if(body('userType').equals(UserType.Fixer))
+    .custom(validateObjectId)
+    .withMessage('Each service ID must be a valid MongoDB Object ID'),
+  body('locations.*')
+    .if(body('userType').equals(UserType.Fixer))
+    .custom(validateObjectId)
+    .withMessage('Each location ID must be a valid MongoDB Object ID'),
   body('services')
-    .if(body('userType').equals('Fixer'))
+    .if(body('userType').equals(UserType.Fixer))
     .notEmpty()
     .withMessage('Services are required for Fixers')
     .isArray()
     .withMessage('Services should be an array'),
   body('locations')
-    .if(body('userType').equals('Fixer'))
+    .if(body('userType').equals(UserType.Fixer))
     .notEmpty()
     .withMessage('Locations are required for Fixers')
     .isArray()

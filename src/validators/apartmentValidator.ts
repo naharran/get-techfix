@@ -21,7 +21,6 @@ export const createApartmentValidations = [
     body().custom(async (value, { req }) => {
       const userId = req.user._id; // Adjust this based on how you store the user's ID in the request
       const existingUser = await User.findOne({ _id: new ObjectId(userId), 'residentData': { $ne: null } });
-        console.log({existingUser,userId})
       if (existingUser) {
         throw new Error('User is already listed in an apartment');
       }

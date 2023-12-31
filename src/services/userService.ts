@@ -35,7 +35,6 @@ class UserService {
   }
 
   async authenticate(email: string, password: string): Promise<any> {
-    console.log("authenticate")
     return await authenticateWithAuth0(email, password);
   }
 }

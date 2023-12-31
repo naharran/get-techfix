@@ -40,7 +40,6 @@ export const validateProfileUpdate = [
 ]
 
 const passwordComplexityValidator = value => {
-  console.log('im in password complexity validator')
   const types = [
     { regex: /[a-z]/, found: false }, // Lowercase
     { regex: /[A-Z]/, found: false }, // Uppercase

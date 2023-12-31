@@ -397,45 +397,5 @@
           }
           
           
-        },
-        "components": {
-          "schemas": {
-            "Apartment": {
-              "type": "object",
-              "properties": {
-                "name": { "type": "string" },
-                "address": { "type": "string" },
-                "coordinates": {
-                  "type": "object",
-                  "properties": {
-                    "lat": { "type": "number" },
-                    "lon": { "type": "number" }
-                  }
-                },
-                "residents": {
-                  "type": "array",
-                  "items": { "type": "string" }
-                },
-                "issues": {
-                  "type": "array",
-                  "items": { "type": "string" }
-                }
-              }
-            },
-            "ApartmentSummary": {
-              "type": "object",
-              "properties": {
-                "name": { "type": "string" },
-                "address": { "type": "string" },
-                "issuesCount": { "type": "number" },
-                "residents": {
-                  "type": "array",
-                  "items": { "type": "object" }
-                }
-              }
-            }
-          }
-        
-    
-    }
+        }
 }

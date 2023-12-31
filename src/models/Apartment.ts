@@ -2,7 +2,7 @@
 
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
-interface IApartment extends Document<Types.ObjectId>  {
+export interface IApartment extends Document<Types.ObjectId>  {
     name: string;
     address: string;
     coordinates: {

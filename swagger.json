@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000/",
+      "url": "https://get-techfix-f8f31f9ffc07.herokuapp.com/",
       "description": "Local Development Server"
     }
   ],

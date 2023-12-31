@@ -3,7 +3,6 @@
 import express, { Request, Response } from 'express';
 import Location from '../models/Location';
 import asyncHandler from 'express-async-handler';
-import authenticate from '../middlewares/authenticate';
 
 const router = express.Router();
 

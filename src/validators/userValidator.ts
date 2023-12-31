@@ -1,6 +1,5 @@
-// src/validators/userValidator.js
-import { body, validationResult } from 'express-validator'
-import User from '../models/User' // Import your User model
+import { CustomValidator, body, validationResult } from 'express-validator'
+import User from '../models/User' 
 import { UserType } from '../types'
 
 const checkUserTypeAssigned = async (value, { req }) => {
@@ -83,16 +82,24 @@ const passwordComplexityValidator = value => {
   return true
 }
 
+
+// Custom validator to check if the email already exists
+const emailExists: CustomValidator = async (email) => {
+  const user = await User.findOne({ email });
+  if (user) {
+    return Promise.reject('Email already in use');
+  }
+};
+
 export const validateSignup = [
-  body('email').isEmail().withMessage('Invalid email format'),
+  body('email')
+    .isEmail().withMessage('Invalid email format')
+    .custom(emailExists),
   body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters long')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
     .custom(passwordComplexityValidator),
   body('firstName')
-    .isLength({ min: 2 })
-    .withMessage('First Name must be at least 2 characters'),
+    .isLength({ min: 2 }).withMessage('First Name must be at least 2 characters'),
   body('lastName')
-    .isLength({ min: 2 })
-    .withMessage('Last Name must be at least 2 characters')
-]
+    .isLength({ min: 2 }).withMessage('Last Name must be at least 2 characters')
+];

@@ -39,6 +39,12 @@ export const validateProfileUpdate = [
     .withMessage('Locations should be an array')
 ]
 
+export const loginValidators = [
+  body('email').isEmail().withMessage('Invalid email format'),
+  body('password').notEmpty().withMessage('Password is required')
+];
+
+
 const passwordComplexityValidator = value => {
   const types = [
     { regex: /[a-z]/, found: false }, // Lowercase

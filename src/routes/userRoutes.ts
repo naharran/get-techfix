@@ -1,13 +1,16 @@
-// src/routes/userRoutes.ts
-
 import express, { Request, Response } from 'express'
 import axios from 'axios'
-import User from '../models/User'
+import User, { ProfileData } from '../models/User'
 import authenticateWithAuth0 from '../utils/authenticateWithAuth0'
-import Profile from '../models/Profile'
 import authenticate from '../middlewares/authenticate'
 import Apartment from '../models/Apartment'
-import { Types } from 'mongoose'
+import { UserType } from '../types'
+import {
+  validateProfileUpdate,
+  validateSignup
+} from '../validators/userValidator'
+import { handleValidationErrors } from '../middlewares/handleValidationErrors'
+import asyncHandler from 'express-async-handler'
 
 const router = express.Router()
 
@@ -17,29 +20,22 @@ async function handleAuthentication (
   password: string,
   res: Response
 ) {
-  try {
-    const authData = await authenticateWithAuth0(email, password)
-
-    // Set a cookie with the token
-    res.cookie('authToken', authData.access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict'
-    })
-
-    return { message: 'Authentication successful', user: authData }
-  } catch (error) {
-    console.error('Authentication error:', error)
-    throw error
-  }
+  const authData = await authenticateWithAuth0(email, password)
+  res.cookie('authToken', authData.access_token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict'
+  })
+  return { message: 'Authentication successful', user: authData }
 }
 
 // Signup Route
-router.post('/signup', async (req: Request, res: Response) => {
-  const { email, password, firstName, lastName } = req.body
-
-  try {
-    // Create user in Auth0
+router.post(
+  '/signup',
+  validateSignup,
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email, password, firstName, lastName } = req.body
     const auth0Response = await axios.post(
       `https://${process.env.AUTH0_DOMAIN}/dbconnections/signup`,
       {
@@ -50,7 +46,6 @@ router.post('/signup', async (req: Request, res: Response) => {
       }
     )
 
-    // Create user in your database
     const newUser = new User({
       email,
       firstName,
@@ -59,80 +54,76 @@ router.post('/signup', async (req: Request, res: Response) => {
     })
     await newUser.save()
 
-    // Authenticate with Auth0 and get tokens
     const tokens = await handleAuthentication(email, password, res)
     res.status(201).json({ message: 'User registered successfully', tokens })
-  } catch (error) {
-    res.status(500).json({ error})
-  }
-})
+  })
+)
 
 router.patch(
   '/complete-profile',
   authenticate,
-  async (req: Request, res: Response) => {
+  validateProfileUpdate,
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
     const { userType, apartmentId, services, locations } = req.body
     const { auth0Id } = req.user
-    const userObjectId  = new Types.ObjectId(auth0Id)
-    // Create a Profile instance for validation
-    const profileData = new Profile({
-      userType,
-      apartmentId,
-      services,
-      locations
+
+    let updateData: ProfileData = { userType }
+
+    if (userType === UserType.Resident) {
+      updateData.residentData = { apartmentId }
+    } else if (userType === UserType.Fixer) {
+      updateData.fixerData = { services, locations }
+    }
+
+    const updatedUser = await User.findOneAndUpdate({ auth0Id }, updateData, {
+      new: true
     })
 
-    // Validate the profile data
-    const validationError = profileData.validateSync()
-    if (validationError) {
-      return res.status(400).json({ error: validationError.message })
-    }
-
-    try {
-      // Update the user's profile in the database
-      const updatedUser = await User.findOneAndUpdate(
-        { auth0Id },
-        { userType, apartmentId, services, locations },
-        { new: true }
-      )
-      if (apartmentId) {
-        const apartment = await Apartment.findById(apartmentId)
-        if (apartment && !apartment.residents.includes(userObjectId)) {
-          apartment.residents.push(userObjectId)
-          await apartment.save()
-        }
+    if (userType === UserType.Resident && apartmentId) {
+      const apartment = await Apartment.findById(apartmentId)
+      if (apartment && !apartment.residents.includes(updatedUser._id)) {
+        apartment.residents.push(updatedUser._id)
+        await apartment.save()
       }
-
-      res
-        .status(200)
-        .json({ message: 'Profile updated successfully', updatedUser })
-    } catch (error) {
-      res.status(500).json({ error: error.data.message })
     }
-  }
+
+    res
+      .status(200)
+      .json({ message: 'Profile updated successfully', updatedUser })
+  })
+)
+
+router.get(
+  '/users-by-type',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const userType = req.query.userType as UserType
+
+    if (!Object.values(UserType).includes(userType)) {
+      res
+        .status(400)
+        .json({ message: 'Invalid or missing userType query parameter' })
+    }
+
+    const users = await User.find({ userType })
+    res.status(200).json(users)
+  })
 )
 
 // Login Route
-router.post('/login', async (req: Request, res: Response) => {
-  const { email, password } = req.body
-
-  try {
-    // Authenticate with Auth0 and get tokens
+router.post(
+  '/login',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { email, password } = req.body
     const tokens = await handleAuthentication(email, password, res)
     res.status(200).json({ message: 'Login successful', tokens })
-  } catch (error) {
-    res.status(500).json({ error: error.message })
-  }
-})
+  })
+)
 
 router.get('/logout', (req: Request, res: Response) => {
-    // Clear the authentication token (or cookie)
-    res.clearCookie('authToken'); // Assuming 'authToken' is the name of your cookie
-    
-    res.status(200).json({ message: 'Successfully logged out' });
-});
-
-
-// Additional routes can be added here
+  res.clearCookie('authToken')
+  res.status(200).json({ message: 'Successfully logged out' })
+})
 
 export default router

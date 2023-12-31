@@ -1,11 +1,14 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose'
 
 interface IService extends Document {
-  name: string;
+  name: string
 }
 
-const ServiceSchema: Schema = new Schema({
-  name: { type: String, required: true }
-});
+const ServiceSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true }
+  },
+  { collection: 'Services' }
+)
 
-export default mongoose.model<IService>('Service', ServiceSchema);
+export default mongoose.model<IService>('Service', ServiceSchema)

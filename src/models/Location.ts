@@ -3,19 +3,19 @@ import mongoose, { Schema, Document } from 'mongoose';
 interface ILocation extends Document {
   city: string;
   region: string;
-  coordinates: {
-    lat: number;
-    lon: number;
-  };
+  coordinates: number[] | { lat: number; lon: number };
 }
 
-const LocationSchema: Schema = new Schema({
+const LocationSchema = new Schema({
   city: { type: String, required: true },
   region: { type: String, required: true },
   coordinates: {
-    lat: { type: Number, required: true },
-    lon: { type: Number, required: true }
+    type: Schema.Types.Mixed, // To support both array and object formats
+    required: true
   }
-});
+}, { collection: 'Locations' });
+
+// Index for the new coordinates format (if using an array)
+LocationSchema.index({ "coordinates": '2dsphere' });
 
 export default mongoose.model<ILocation>('Location', LocationSchema);

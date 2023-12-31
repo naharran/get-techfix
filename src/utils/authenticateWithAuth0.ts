@@ -17,7 +17,6 @@ async function authenticateWithAuth0(email: string, password: string) {
 
         return response.data;
     } catch (error) {
-        console.log(error.message, error.response.data)
         throw new Error(error.response?.data || error.message);
     }
 }

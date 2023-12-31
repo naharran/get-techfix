@@ -1,121 +1,107 @@
-// src/routes/apartmentRoutes.ts
+import express, { Request, Response } from 'express'
+import asyncHandler from 'express-async-handler'
+import authenticate from '../middlewares/authenticate'
+import Apartment from '../models/Apartment'
+import { geocodeAddress } from '../utils/geocoding'
+import User from '../models/User'
+import { apartmentSummaryPipeline } from '../aggregations/apartmentSummary'
+import { createApartmentValidations, validatePotentialFixers } from '../validators/apartmentValidator'
+import { findPotentialFixers } from '../services/apartment.service'
+import { handleValidationErrors } from '../middlewares/handleValidationErrors'
 
-import express, { Request, Response } from 'express';
-import authenticate from '../middlewares/authenticate';
-import Apartment from '../models/Apartment';
-import { geocodeAddress } from '../utils/geocoding'; // Assuming this is your geolocation utility
-import User from '../models/User';
+const router = express.Router()
 
-const router = express.Router();
+router.post(
+  '/create',
+  authenticate,
+  createApartmentValidations,
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { name, address } = req.body
+    const userId = req.user._id
+    const coordinates = await geocodeAddress(address)
+    console.log({userId})
+    const newApartment = new Apartment({
+      name,
+      address,
+      residents: [userId],
+      coordinates
+    })
 
-router.post('/create', authenticate, async (req: Request, res: Response) => {
-    try {
-        const { name, address } = req.body;
-        const userId = req.user._id
-        // Use geolocation utility to convert address to coordinates
-        const coordinates = await geocodeAddress(address);
+    await newApartment.save()
+    await User.findByIdAndUpdate(
+      userId, 
+      { 'residentData.apartmentId': newApartment._id }
+    );
 
-        // Create and save the new apartment
-        const newApartment = new Apartment({
-            name,
-            address,
-            residents: [userId],
-            coordinates
-        });
+    res
+      .status(201)
+      .json({ message: 'Apartment created successfully', newApartment })
+  })
+)
 
-        await newApartment.save();
-        await User.findByIdAndUpdate(userId, { apartmentId: newApartment._id });
+router.get(
+  '/',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { residentName, residentEmail, address, apartmentName } = req.query
+    let query = {}
 
-        res.status(201).json({ message: 'Apartment created successfully', newApartment });
-    } catch (error) {
-        console.error('Error creating apartment:', error);
-        res.status(500).json({ error: error.message });
+    if (residentName || residentEmail) {
+      let userMatch = {}
+      if (residentName)
+        userMatch['name'] = new RegExp(residentName as string, 'i')
+      if (residentEmail)
+        userMatch['email'] = new RegExp(residentEmail as string, 'i')
+
+      const users = await User.find(userMatch)
+      const userIds = users.map(user => user._id)
+      query['residents'] = { $in: userIds }
     }
-});
-router.get('/', authenticate, async (req: Request, res: Response) => {
-    try {
-        const { residentName, residentEmail, address, apartmentName } = req.query;
-        let query = {};
 
-        if (residentName || residentEmail) {
-            let userMatch = {};
-            if (residentName) userMatch['name'] = new RegExp(residentName as string, 'i');
-            if (residentEmail) userMatch['email'] = new RegExp(residentEmail as string, 'i');
+    if (address) query['address'] = new RegExp(address as string, 'i')
+    if (apartmentName) query['name'] = new RegExp(apartmentName as string, 'i')
 
-            const users = await User.find(userMatch);
-            const userIds = users.map(user => user._id);
-            query['residents'] = { $in: userIds };
-        }
+    const apartments = await Apartment.find(query)
+    res.status(200).json(apartments)
+  })
+)
 
-        if (address) query['address'] = new RegExp(address as string, 'i');
-        if (apartmentName) query['name'] = new RegExp(apartmentName as string, 'i');
+router.get(
+  '/:apartmentId',
+  authenticate,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { apartmentId } = req.params
+    const resident = await Apartment.find({ _id: apartmentId })
+    res.status(200).json(resident)
+  })
+)
 
-        const apartments = await Apartment.find(query).populate('residents');
-        res.status(200).json(apartments);
-    } catch (error) {
-        console.error('Error fetching apartments:', error);
-        res.status(500).json({ error: error.message });
+router.get(
+  '/:apartmentId/potential-fixers',
+  validatePotentialFixers,
+  handleValidationErrors,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { apartmentId } = req.params
+    const { issueType } = req.query
+
+    // Retrieve the apartment to get its coordinates
+    const apartment = await Apartment.findById(apartmentId)
+    if (!apartment) {
+      res.status(404).json({ message: 'Apartment not found' })
     }
-});
 
-router.get('/resident/:residentId', authenticate, async (req: Request, res: Response) => {
-    try {
-        const { residentId } = req.params;
-        const apartments = await Apartment.find({ residents: residentId }).populate('residents');
-        res.status(200).json(apartments);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-router.get('/apartments-summary', authenticate, async (req: Request, res: Response) => {
-    try {
-        const apartmentsSummary = await Apartment.aggregate([
-            {
-                $lookup: {
-                    from: 'issues',
-                    localField: '_id',
-                    foreignField: 'apartment',
-                    as: 'issues'
-                }
-            },
-            {
-                $unwind: {
-                    path: '$issues',
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
-                $group: {
-                    _id: '$_id',
-                    name: { $first: '$name' },
-                    address: { $first: '$address' },
-                    issuesCount: { $sum: { $cond: [{ $eq: ['$issues.status', 'open'] }, 1, 0] } },
-                    residents: { $first: '$residents' }
-                }
-            },
-            {
-                $lookup: {
-                    from: 'users',
-                    localField: 'residents',
-                    foreignField: '_id',
-                    as: 'residentDetails'
-                }
-            },
-            {
-                $project: {
-                    name: 1,
-                    address: 1,
-                    issuesCount: 1,
-                    residents: '$residentDetails.name'
-                }
-            }
-        ]);
+    const potentialFixers = await findPotentialFixers(
+      apartment.coordinates,
+      issueType
+    )
+      console.log({potentialFixers})
+    res.status(200).json({ potentialFixers })
+  })
+)
 
-        res.status(200).json(apartmentsSummary);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// The `findPotentialFixers` function needs to be implemented in a suitable module.
+
+export default router
 
 
-export default router;
